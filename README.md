@@ -154,6 +154,7 @@ licenses ([`NOTICE`](NOTICE)).
 This project is set up to be picked up by an AI coding agent as much as by a human.
 If that's you (or your agent), start with **[`AGENTS.md`](AGENTS.md)**, then
 `docs/STATE.md` and `ROADMAP.md`.
+Porting by human, less AI used (In some parts, AI wasn't used)
 
 ## Credits
 
