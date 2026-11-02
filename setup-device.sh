@@ -18,23 +18,74 @@
 # If the device is not an iPhone 7, or not on jailbroken iOS over SSH, it stops.
 set -eu
 cd "$(dirname "$0")"
+set -eu
+cd "$(dirname "$0")"
+
+# --- helpers, so die would exist  ---
+bold(){ printf '\033[1m%s\033[0m\n' "$*"; }
+ok(){   printf '\033[32m✓ %s\033[0m\n' "$*"; }
+warn(){ printf '\033[33m! %s\033[0m\n' "$*"; }
+die(){  printf '\033[31m✗ %s\033[0m\n' "$*"; exit 1; }
+
+# --- root check ---
+if [ "$EUID" -ne 0 ]; then
+  die "Please run this script as root."
+fi
+
+# --- config ---
 [ -f ./config.env ] && . ./config.env
-: "${IOS_IP:?set IOS_IP in config.env — the iPhone must be on jailbroken iOS, reachable over SSH}"
-: "${IOS_SSH_PASS:=alpine}"; : "${SSHPASS_BIN:=sshpass}"
+: "${IOS_IP:?set IOS_IP in config.env — the iPhone must be on jailbroken iOS, reachable over SSH. Did you install OpenSSH on your iDevice and the host? Did you reset the root password and wrote to the config.env?}"
+: "${IOS_SSH_PASS:=alpine}"; : "${SSHPASS_BIN:=/usr/bin/sshpass}"
+IMAGE="${NAND:-nand-a16}"
+
+ios(){ "$SSHPASS_BIN" -p "$IOS_SSH_PASS" ssh -p "${IOS_SSH_PORT:-2222}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+  -o PubkeyAuthentication=no -o LogLevel=ERROR "root@$IOS_IP" "$@"; }
+
+# --- iproxy ---
+IPROXY_BIN="${IPROXY_BIN:-iproxy}"
+IPROXY_PID=""
+
+start_iproxy() {
+  # 1) if local ssh is hearing - do nothing
+  if (exec 3<>"/dev/tcp/127.0.0.1/2222") 2>/dev/null; then
+    exec 3>&- 2>/dev/null || true
+    ok "SSH port 2222 on localhost already reachable — not starting iproxy"
+    return 0
+  fi
+
+  # 2) kill all old iProxy processes if they hold the port
+  if pgrep -x "$IPROXY_BIN" >/dev/null 2>&1; then
+    warn "found old iproxy process(es) — killing them"
+    pkill -x "$IPROXY_BIN" 2>/dev/null || true
+    sleep 1
+  fi
+
+  # 3) restart
+  "$IPROXY_BIN" 2222 44 >/tmp/iproxy.log 2>&1 &
+  IPROXY_PID=$!
+  trap 'kill "$IPROXY_PID" 2>/dev/null || true' EXIT INT TERM
+  sleep 1
+
+  # 4) check
+  if ! kill -0 "$IPROXY_PID" 2>/dev/null; then
+    cat /tmp/iproxy.log
+    die "iproxy failed to start (port 2222 maybe occupied by something else — check with: ss -ltnp | grep :2222)"
+  fi
+  ok "iproxy started (localhost:2222 -> device:44, pid $IPROXY_PID)"
+}
+
 IMAGE="${NAND:-nand-a16}"
 
 bold(){ printf '\033[1m%s\033[0m\n' "$*"; }
 ok(){ printf '\033[32m✓ %s\033[0m\n' "$*"; }
 warn(){ printf '\033[33m! %s\033[0m\n' "$*"; }
 die(){ printf '\033[31m✗ %s\033[0m\n' "$*"; exit 1; }
-ios(){ "$SSHPASS_BIN" -p "$IOS_SSH_PASS" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-  -o PubkeyAuthentication=no -o LogLevel=ERROR "root@$IOS_IP" "$@"; }
 
 bold "iDroidik first-time device setup (EXPERIMENTAL)"
 [ -f "$IMAGE" ] || die "image '$IMAGE' not found — run ./install.sh first to fetch it"
 
 bold "1/5  Checking the phone (must be jailbroken iOS, iPhone 7)…"
-ios true 2>/dev/null || die "cannot SSH to root@$IOS_IP — boot the phone into jailbroken iOS (palera1n -f) and set IOS_IP"
+ios true 2>/dev/null || die "cannot SSH to root@$IOS_IP — boot the phone into jailbroken iOS (palera1n -f) and set IOS_IP - did you install OpenSSH on your iDevice and the host?"
 MODEL=$(ios 'uname -a; /usr/bin/sysctl -n hw.machine 2>/dev/null || true' 2>/dev/null || true)
 echo "  device: $MODEL"
 case "$MODEL" in
@@ -65,11 +116,11 @@ ok "Android volume: $DEV"
 ios "mkdir -p /var/mnt/android; mount | grep -q /var/mnt/android || mount -t apfs $DEV /var/mnt/android" || die "failed to mount the Android volume"
 
 bold "3/5  Uploading the firmware-free image to the phone (~3 GB, a few minutes)…"
-want=$(shasum -a 256 "$IMAGE" | cut -d' ' -f1)
+want=$(sha256sum "$IMAGE" | cut -d' ' -f1)
 # Skip the upload on a re-run if the phone already has exactly this image (computing the
 # device-side sha of ~3 GB takes ~1 min but saves a multi-minute re-upload, and avoids a
 # misleading "not enough space" when userdata.img has since taken the slack).
-have=$(ios '{ sha256sum /var/mnt/android/nand 2>/dev/null || shasum -a 256 /var/mnt/android/nand 2>/dev/null; }' | cut -d' ' -f1)
+have=$(ios '{ sha256sum /var/mnt/android/nand 2>/dev/null || sha256sum /var/mnt/android/nand 2>/dev/null; }' | cut -d' ' -f1)
 if [ -n "$have" ] && [ "$have" = "$want" ]; then
   ok "image already on the phone and matches ($want) — skipping upload"
 else
@@ -84,7 +135,7 @@ else
   "$SSHPASS_BIN" -p "$IOS_SSH_PASS" ssh -C -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
     -o PubkeyAuthentication=no -o LogLevel=ERROR "root@$IOS_IP" 'cat > /var/mnt/android/nand.part && sync' < "$IMAGE" \
     || { ios 'rm -f /var/mnt/android/nand.part'; die "image transfer interrupted"; }
-  got=$(ios '{ sha256sum /var/mnt/android/nand.part 2>/dev/null || shasum -a 256 /var/mnt/android/nand.part; }' | cut -d' ' -f1)
+  got=$(ios '{ sha256sum /var/mnt/android/nand.part 2>/dev/null || sha256sum /var/mnt/android/nand.part; }' | cut -d' ' -f1)
   [ "$want" = "$got" ] || { ios 'rm -f /var/mnt/android/nand.part'; die "checksum mismatch after upload (expected $want, got $got)"; }
   ios 'cd /var/mnt/android && mv -f nand.part nand && sync'
   ok "image on phone, checksum verified"
