@@ -15,7 +15,9 @@ first-time setup; the Pixel-style launcher is an optional extra step — see bel
 > and it must be booted from a Mac each time. See [`docs/STATE.md`](docs/STATE.md)
 > for the exact works / doesn't-work list, and [`ROADMAP.md`](ROADMAP.md) for
 > what's left before it's a clean, one-command, legal public release.
-> nand gluing fixed
+>
+> nand gluing fixed;
+> 
 > For Ryzen: Use palen1x USB drive or create an EFI with palen1x inside.
 
 <p align="center"><img src="pixel/preview.png" width="280" alt="Pixel-style Android on iPhone 7"></p>
