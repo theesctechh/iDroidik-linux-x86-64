@@ -8,8 +8,8 @@
 #   ./android.sh linux      boot the Sandcastle Linux build instead
 #   ./android.sh deploy     Android 16 loop: jailbroken iOS → upload nand-a16 if changed → Recovery → boot
 #
-# Boot chain: palera1n -p (checkm8 → palera1n's pongoOS 2.6.3, which lacks Linux commands)
-#   → chainload official PongoOS 2.6.1 (bootr) → upload kernel with explicit linux_cmdline.
+# Boot chain: palera1n -p -k Pongo-2.6.1.bin (checkm8 → pongoOS 2.6.1)
+#  pongoOS 2.6.1 - upload kernel with explicit linux_cmdline.
 set -u
 cd "$(dirname "$0")"
 
@@ -36,7 +36,7 @@ ok()    { printf '\033[32m✓ %s\033[0m\n' "$*"; }
 warn()  { printf '\033[33m! %s\033[0m\n' "$*"; }
 fail()  { printf '\033[31m✗ %s\033[0m\n' "$*"; exit 1; }
 
-# adb root restarts adbd; macOS sometimes loses the re-enumerated gadget until the adb server restarts.
+# adb restarts adbd
 # Prefer an already-connected Wi-Fi ADB (stable); otherwise the USB gadget.
 pick_device() {
   local wifi; wifi=$(adb devices 2>/dev/null | awk '$2=="device" && $1 ~ /:5555$/ {print $1; exit}')
@@ -132,7 +132,7 @@ pongo_version() { ./loader/pongo-shell 2>/dev/null | grep -oE 'pongoOS [0-9.]+' 
 
 enter_pongo() {
   if pongo_present; then ok "pongoOS already running"; return; fi
-  step "Step 1/4: checkm8 exploit via palera1n"
+  step "Step 1/3: checkm8 exploit via palera1n + boot PongoOS with linux support"
   cat <<'EOF'
   1. palera1n will put the phone into Recovery itself
   2. When "Press Enter when ready for DFU mode" appears, press Enter
@@ -141,34 +141,17 @@ enter_pongo() {
   If it hangs on "reconnect in download mode", unplug and replug the cable.
 EOF
   while true; do
-    "$PALERA1N" -p && break
+    "$PALERA1N" -p -k Pongo-2.6.1.bin && break
     warn "palera1n failed. Replug the cable if needed and press Enter to retry (Ctrl+C to quit)"
     read -r
   done
-  printf 'waiting for pongoOS'
-  for _ in $(seq 1 60); do pongo_present && break; printf '.'; sleep 1; done
-  echo
-  pongo_present || fail "pongoOS did not appear on USB"
-  sleep 3
-  ok "pongoOS running"
-}
-
-chainload_pongo() {
-  step "Step 2/4: loading PongoOS 2.6.1 (with Linux support)"
-  local ver; ver=$(pongo_version)
-  if [ "$ver" = "pongoOS 2.6.1" ]; then ok "already 2.6.1"; return; fi
-  ./loader/pongo-bootr pongo-rel/Pongo-2.6.1.bin >/dev/null 2>&1
-  for _ in $(seq 1 30); do
-    sleep 1
-    [ "$(pongo_version)" = "pongoOS 2.6.1" ] && { ok "PongoOS 2.6.1 running"; return; }
-  done
-  fail "PongoOS 2.6.1 did not start (reboot the phone and try again)"
+  ok echo "pongoOS with linux support running"
 }
 
 BASE_CMDLINE="earlycon=hx_uart,0x20a0c0000 console=tty0 console=ttyHX0 selinux=1 enforcing=0 androidboot.selinux=permissive printk.devkmsg=on androidboot.hardware=ranchu"
 
 upload_kernel() { # img dtb [initrd]
-  step "Step 3/4: uploading the kernel"
+  step "Step 2/3: uploading the kernel"
   local out cmdline="$BASE_CMDLINE"
   # NOREBOOT=1: on a fatal error the phone freezes with the log on screen instead of rebooting to iOS
   [ "${NOREBOOT:-0}" = 1 ] && { cmdline="$cmdline hx_reboot.noreboot=1"; warn "debug mode: on error the phone freezes with the log on screen -- photograph it"; }
@@ -184,7 +167,7 @@ upload_kernel() { # img dtb [initrd]
 }
 
 wait_android() {
-  step "Step 4/4: waiting for Android to boot (1-3 min)"
+  step "Step 3/3: waiting for Android to boot (1-3 min)"
   adb start-server >/dev/null 2>&1
   local t=0
   until adb devices 2>/dev/null | grep -q 'device$'; do
@@ -347,12 +330,13 @@ save_ud_conf() { printf 'UD_NONCE=%s\nUD_HDR=%s\n' "$UD_NONCE" "$UD_HDR" > "$UD_
 ensure_userdata_img() { # needs jailbroken iOS
   step "Android persistent storage: checking userdata.img"
   ios 'mkdir -p /var/mnt/android; mount | grep -q " /var/mnt/android " || for d in /dev/disk0s1s*; do [ "$(/System/Library/Filesystems/apfs.fs/apfs.util -p "$d" 2>/dev/null)" = Android ] && { mount -t apfs "$d" /var/mnt/android; break; }; done' || fail "the Android volume did not mount"
-  local have; have=$(ios 'ls -ln /var/mnt/android/userdata.img 2>/dev/null' | awk '{print $5}')
+  local have; have=$(ios 'ls -ln /var/mnt/android/userdata.img 2>/dev/null' | tr -s ' ' | cut -d' ' -f5)
   if [ -n "$have" ]; then
     [ -n "$UD_NONCE" ] || { warn "userdata.img exists but $UD_CONF is lost -- leaving the file alone, /data will be in RAM"; return; }
     ok "userdata.img already exists ($((have / 1073741824)) GB)"; return
   fi
-  local free_gb; free_gb=$(ios 'df -k /var/mnt/android' | awk 'NR==2 {print int($4/1048576)}')
+  local free_kb; free_kb=$(ios 'df -k /var/mnt/android | tail -1 | tr -s " " | cut -d" " -f4' 2>/dev/null | tr -d '\r')
+  local free_gb=$(( ${free_kb:-0} / 1048576 ))
   local gb=${USERDATA_GB:-6}
   [ $((free_gb - 3)) -lt "$gb" ] && gb=$((free_gb - 3))
   if [ "$gb" -lt 2 ]; then warn "only ${free_gb} GB free on the iPhone -- too little for userdata.img, /data stays in RAM"; return; fi
@@ -367,7 +351,7 @@ for i in range(total):
 ' "$nonce" "$gb" | "$SSHPASS_BIN" -p "$IOS_SSH_PASS" ssh -C -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
       -o PubkeyAuthentication=no -o LogLevel=ERROR root@$IOS_IP 'cat > /var/mnt/android/userdata.img.part && sync' \
     || { ios 'rm -f /var/mnt/android/userdata.img.part'; fail "userdata.img transfer interrupted"; }
-  have=$(ios 'ls -ln /var/mnt/android/userdata.img.part' | awk '{print $5}')
+  have=$(ios 'ls -ln /var/mnt/android/userdata.img.part' | tr -s ' ' | cut -d' ' -f5)
   [ "$have" = $((gb * 1073741824)) ] || { ios 'rm -f /var/mnt/android/userdata.img.part'; fail "userdata.img has the wrong size ($have)"; }
   ios 'cd /var/mnt/android && mv userdata.img.part userdata.img && sync' || fail "failed to rename userdata.img"
   UD_NONCE=$nonce; UD_HDR=; save_ud_conf
@@ -402,8 +386,10 @@ install_apks() {
 # ---------- deploy: push a rebuilt Android 16 nand through jailbroken iOS, then boot it ----------
 # (IOS_IP is required only by deploy — it is checked in the deploy case, NOT here, so the
 #  default `./android.sh` boot works fine with an empty IOS_IP.)
-ios() { t "${IOS_TIMEOUT:-30}" "$SSHPASS_BIN" -p "$IOS_SSH_PASS" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-          -o PubkeyAuthentication=no -o LogLevel=ERROR -o ConnectTimeout=6 root@$IOS_IP "$@"; }
+ios() { t "${IOS_TIMEOUT:-30}" ssh -p "${IOS_SSH_PORT:-22}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+          -o LogLevel=ERROR -o ConnectTimeout=6 root@$IOS_IP "$@" 2>/dev/null || \
+        t "${IOS_TIMEOUT:-30}" "$SSHPASS_BIN" -p "$IOS_SSH_PASS" ssh -p "${IOS_SSH_PORT:-22}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+          -o LogLevel=ERROR -o ConnectTimeout=6 root@$IOS_IP "$@"; }
 
 ensure_jailbroken_ios() {
   if IOS_TIMEOUT=10 ios true 2>/dev/null; then ok "jailbroken iOS already running"; return; fi
@@ -467,7 +453,6 @@ case "${1:-android}" in android|linux|deploy) perl -e 'alarm 10; exec @ARGV' adb
 
 case "${1:-android}" in
   android)
-    enter_pongo; chainload_pongo
     upload_kernel "$ANDROID_IMG" "$ANDROID_DTB" "$ANDROID_INITRD"
     wait_android
     if userdata_status; then tune; install_apks; bold ""; bold "🤖 Android is ready. Data is saved on the phone automatically."
@@ -501,7 +486,7 @@ case "${1:-android}" in
     ensure_userdata_img
     reboot_ios_to_recovery
     step "Booting Android 16 -- DFU buttons #2 of 2"
-    enter_pongo; chainload_pongo
+    enter_pongo;
     upload_kernel "$ANDROID_IMG" "$ANDROID_DTB" "$ANDROID_INITRD"
     wait_android && { userdata_status; tune; install_apks; }
     bold ""
@@ -510,7 +495,7 @@ case "${1:-android}" in
     bold "   To use normal iOS again, run:  ~/.local/bin/palera1n -n   — do NOT 'Restore' in Finder (that erases it)."
     ;;
   linux)
-    enter_pongo; chainload_pongo
+    enter_pongo;
     upload_kernel "$LINUX_IMG" "$LINUX_DTB"
     bold "🐧 Linux is booting. For SSH: sudo ifconfig en6 172.16.1.2 netmask 255.255.255.0 up && ssh root@172.16.1.1 (password alpine)"
     ;;
