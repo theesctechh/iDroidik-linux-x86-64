@@ -29,6 +29,42 @@ EXPECTED_IMAGE_SHA256="437cf287068e2b0ffd17225d1309314aa108437a62fb187d53ed31a93
 bold "Android on iPhone 7 — installer"
 echo
 
+# 0. check if tools are installed 
+echo -e "\e[32m[+] Checking required dependencies...\e[0m"
+
+# List of required commands
+REQUIRED_TOOLS=("ssh" "scp" "iproxy" "adb" "sshpass" "git" "curl" "sha256sum" "palera1n")
+
+MISSING_TOOLS=()
+
+# check if usbmuxd runs
+if ! command -v usbmuxd &> /dev/null && ! systemctl is-active --quiet usbmuxd; then
+    MISSING_TOOLS+=("usbmuxd (could be stopped by user. or its not installed on your system?)")
+fi
+
+# Loop through the list and check if they exist
+for tool in "${REQUIRED_TOOLS[@]}"; do
+    if ! command -v "$tool" &> /dev/null; then
+        MISSING_TOOLS+=("$tool")
+    fi
+done
+
+# If the array is not empty, some tools are missing
+if [ ${#MISSING_TOOLS[@]} -ne 0 ]; then
+    echo -e "\e[31m[!] Error: The following required tools are missing:\e[0m"
+    for missing in "${MISSING_TOOLS[@]}"; do
+        echo -e "\e[31m    - $missing\e[0m"
+    done
+    echo ""
+    echo -e "\e[33m[!] Please install them and run this script again.\e[0m"
+    echo -e "\e[33m[!] For Debian/Ubuntu, you can usually install them with:\e[0m"
+    echo -e "\e[33m    sudo apt update && sudo apt install libimobiledevice-1.0-6 libimobiledevice-utils libusbmuxd-tools usbmuxd libusb-1.0-0-dev adb sshpass git curl\e[0m"
+    echo -e "\e[33m    You also can install palera1n and checkra1n (if needed) on palera.in and checkra.in"
+    exit 1
+else
+    echo -e "\e[32m[+] All dependencies are installed!\e[0m"
+fi
+
 # 1. config
 if [ ! -f config.env ]; then
   cp config.env.example config.env
@@ -70,25 +106,25 @@ fi
 step_missing=0
 need() { command -v "$1" >/dev/null 2>&1 || { warn "missing: $1  ($2)"; step_missing=1; }; }
 need palera1n "install from https://palera.in, or set PALERA1N in config.env"
-need sshpass   "brew install hudochenkov/sshpass/sshpass"
-need adb       "brew install android-platform-tools"
-need shasum    "part of macOS"
-need curl      "part of macOS"
-need python3   "part of the Xcode Command Line Tools: xcode-select --install"
-need perl      "part of macOS"
-need openssl   "part of macOS / brew install openssl"
+need sshpass   "sudo apt install sshpass"
+need adb       "sudo apt install adb"
+need sha256sum "part of coreutils"
+need curl      "sudo apt install curl"
+need python3   "sudo apt install python3"
+need ssh       "sudo apt install openssh-client"
+need scp       "sudo apt install openssh-client"
 [ "$step_missing" = 0 ] && ok "host tools present" || warn "install the tools above, then re-run"
 
 # 3. fetch the Android image (per MANIFEST.md)
-# Downloading the parts (~3.3 GB) and reassembling them needs ~6.5 GB free transiently on the Mac.
+# Downloading the parts (~3.3 GB) and reassembling them needs ~6.5 GB free transiently on the Linux machine.
 free_mb=$(df -m . 2>/dev/null | awk 'NR==2{print $4}')
-case "$free_mb" in ''|*[!0-9]*) : ;; *) [ "$free_mb" -lt 7000 ] && warn "low disk on the Mac (~${free_mb} MB free) — downloading + joining the image needs ~6.5 GB; free space first or the join may fail." ;; esac
+case "$free_mb" in ''|*[!0-9]*) : ;; *) [ "$free_mb" -lt 7000 ] && warn "low disk on the Linux machine (~${free_mb} MB free) — downloading + joining the image needs ~6.5 GB; free space first or the join may fail." ;; esac
 fetched=0
 # Drop a stale/partial leftover: trust an existing reassembled image only when it still matches
 # the downloaded parts' whole.sha256 (when we have it). A genuine self-built image has no
 # nandparts/whole.sha256 and is pin-checked below instead.
 if [ -f "$IMAGE_BASE_NAME" ] && [ -f "nandparts/$IMAGE_BASE_NAME.whole.sha256" ] \
-   && [ "$(shasum -a 256 "$IMAGE_BASE_NAME" | cut -d' ' -f1)" != "$(cut -d' ' -f1 "nandparts/$IMAGE_BASE_NAME.whole.sha256")" ]; then
+   && [ "$(sha256sum "$IMAGE_BASE_NAME" | cut -d' ' -f1)" != "$(cut -d' ' -f1 "nandparts/$IMAGE_BASE_NAME.whole.sha256")" ]; then
   warn "existing $IMAGE_BASE_NAME doesn't match the downloaded parts — discarding and re-joining"
   rm -f "$IMAGE_BASE_NAME"
 fi
@@ -106,7 +142,7 @@ elif [ -n "$IMAGE_BASE_URL" ]; then
     case "$part" in */*|*..*) die "refusing suspicious part name in manifest: $part" ;; esac
     if [ -f "nandparts/$part" ]; then
       # keep an existing part only if it already matches its manifest sha; else re-fetch it
-      [ "$(shasum -a 256 "nandparts/$part" | cut -d' ' -f1)" = "$psha" ] && continue
+      [ "$(sha256sum "nandparts/$part" | cut -d' ' -f1)" = "$psha" ] && continue
       warn "re-downloading corrupt/partial part: $part"; rm -f "nandparts/$part"
     fi
     echo "  $part"
@@ -129,7 +165,7 @@ fi
 # self-built / self-supplied image legitimately won't match the canonical pin — accept it and
 # record its own hash (set ALLOW_UNPINNED_IMAGE=0 to forbid even that).
 if [ -f "$IMAGE_BASE_NAME" ]; then
-  got=$(shasum -a 256 "$IMAGE_BASE_NAME" | cut -d' ' -f1)
+  got=$(sha256sum "$IMAGE_BASE_NAME" | cut -d' ' -f1)
   if [ "$got" = "$EXPECTED_IMAGE_SHA256" ]; then
     printf '%s  %s\n' "$got" "$IMAGE_BASE_NAME" > "$IMAGE_BASE_NAME.sha256"
     ok "image verified against the pinned sha256"
@@ -174,7 +210,7 @@ done
 echo "$BOOT_BLOBS" | while IFS='|' read -r path name sha; do
   [ -n "$path" ] || continue
   [ -f "$path" ] || continue
-  got=$(shasum -a 256 "$path" | cut -d' ' -f1)
+  got=$(sha256sum "$path" | cut -d' ' -f1)
   [ "$got" = "$sha" ] || { warn "$path sha256 mismatch — removing (expected $sha)"; mv -f "$path" "$path.BAD" 2>/dev/null; }
 done
 for b in work/Image-a16f.lzma work/debug-initrd.cpio.gz pongo-rel/Pongo-2.6.1.bin patch-vulkan/vulkan.pastel.so; do
