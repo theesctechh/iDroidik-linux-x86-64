@@ -11,20 +11,20 @@ steps (plugging the cable, the DFU button sequence). You don't need to understan
 > erase your iOS or data.
 
 > 📦 **Binaries are hosted.** The ~3 GB Android image (split) **and the boot binaries** (kernel,
-> initrd, Pongo, vulkan driver) are published on the `v0.1-exp` GitHub release, and `install.sh`
+> initrd, Pongo, vulkan driver) are published on the `v0.1-exp` [GitHub release](https://github.com/Aisamo-fi/iDroidik/releases/), and `install.sh`
 > fetches them automatically and verifies each against a pinned SHA-256. You normally don't need
 > to build anything — just run `install.sh`. (To build from source instead, see
 > [`MANIFEST.md`](MANIFEST.md) / [`docs/BUILD.md`](docs/BUILD.md).)
 
 ## Steps
 
-1. On your **Mac**, clone the repo and open the folder in your AI agent (Claude Code):
+1. On your **Linux machine**, clone the repo and open the folder in your AI agent (Claude Code):
    ```bash
    git clone https://github.com/Aisamo-fi/iDroidik.git
    cd iDroidik
    ```
-2. **Connect your iPhone 7 directly to the Mac** (a real data cable, **no USB hub / dock** —
-   a hub makes the checkm8 exploit fail and can wedge the Mac's USB).
+2. **Connect your iPhone 7 directly to the Linux machine** (a real data cable, **no USB hub / dock** —
+   a hub makes the checkm8 exploit fail and can wedge the Linux's USB).
 3. Paste the prompt below to the agent and let it work. Answer its questions and do the
    physical steps it asks for.
 
@@ -32,7 +32,7 @@ steps (plugging the cable, the DFU button sequence). You don't need to understan
 
 ```
 You are installing "iDroidik" — a real Android 16 on my iPhone 7 — from this repository,
-checked out in your current working directory on my Mac. You have shell access. Drive the
+checked out in your current working directory on my Linux machine. You have shell access. Drive the
 setup; I will do the physical steps (cable, buttons) when you tell me to.
 
 Your job is ONLY to install Android for me on this one phone. Read and follow these repo files:
