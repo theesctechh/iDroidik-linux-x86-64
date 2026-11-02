@@ -89,7 +89,7 @@ The name "iDroidik" is used in homage to the original iDroid / openiBoot project
 (2010–2012, Android on the early iPhones); this is an independent, unrelated effort.
 
 --------------------------------------------------------------------------------
-Original work in THIS project (MIT, see LICENSE) — these files only:
+Original work in THIS project made by [Aisamo-fi](https://github.com/Aisamo-fi) (MIT, see LICENSE) — these files only:
   android.sh, boot*.sh, wait-and-load.sh, setup-device.sh, pixelify.sh, install.sh,
   config.env.example,
   tools/ (split-image.sh, join-image.sh, fetch-apks.sh, gen-firmware.sh, lpsuper.py,
