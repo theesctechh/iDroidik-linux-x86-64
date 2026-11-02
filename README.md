@@ -1,7 +1,4 @@
 # iDroidik-linux — Android on iPhone 7 through your Linux machine!
-# This fork is being actively ported to Linux! No changes in repo yet.
-# Do not use this repo on your Linux! Its still full of macOS things
-# The README.md isn't fully rewritten as is.
 
 Run a real **Android 16** on an **iPhone 7** (iOS 15), on top of the
 [Project Sandcastle](https://github.com/corellium/projectsandcastle) Linux kernel.
@@ -11,13 +8,10 @@ normal iPhone: iOS boots as usual; Android is loaded from your Linux machine eac
 Persistent storage (so apps and settings survive reboots) is set up by default during
 first-time setup; the Pixel-style launcher is an optional extra step — see below.
 > **What has been ported so far:**
-> - [x] `install.sh` (replaced `shasum` with `sha256sum`, removed Mac paths) 
-> - [x] `join-image.sh` (fixed the NAND gluing bug)
-> - [x] `boot.sh` (swapped missing PongoOS with `checkra1n -cp`)
-> - [x] NAND transfer over `iproxy` and SSH (tested on Debian Testing)
-> - [ ] `setup-device.sh` (currently being audited)
-> - [ ] `install.sh installed binaries check` (will be audited too)
-> **AMD Ryzen Users:** You will likely hit a `-75` USB error. Use `palen1x` on a USB drive to inject the payload, then run the script.
+> everything so far
+
+
+> **Warning for AMD Ryzen Users:** You will likely hit a `-75` USB error. Use `palen1x` on a USB drive to inject the payload, then run the script.
 
 > ⚠️ **Status: usable but tethered, and not fully hands-off yet.** It boots to a
 > working UI. It has **no audio, camera, cellular, Bluetooth or GPU acceleration**,
@@ -52,7 +46,7 @@ Prefer to do it by hand? Use the quick start below.
 - An **iPhone 7** (model `iPhone9,3`/`iPhone9,1`) on **iOS 15.x**, checkm8-capable.
   This is destructive-adjacent low-level work — a spare phone is strongly advised.
   **Never restore the phone** (that can wipe it; setup only adds a volume).
-- A **Linux PC** (x86_64) with a USB cable. 
+- A **Linux machine** (x86_64) with a USB cable. 
   *Note: We currently use `checkra1n -cp` (or a patched `palera1n` call) to bypass the original macOS `loader/` binaries, so you do not need the arm64 Homebrew loaders.*
 - **Linux only.** Windows and macOS are not supported by this specific fork. (If you are on a Mac, please use the original [iDroidik repo](https://github.com/Aisamo-fi/iDroidik)).
 - Tools: `install.sh` will scan for binaries of: `palera1n`, `sshpass`, `adb`, and `libusb`. 
