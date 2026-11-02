@@ -1,6 +1,7 @@
 # iDroidik-linux — Android on iPhone 7 through your Linux machine!
 # This fork is being actively ported to Linux! No changes in repo yet.
 # Do not use this repo on your Linux! Its still full of macOS things
+# The README.md isn't fully rewritten as is.
 
 Run a real **Android 16** on an **iPhone 7** (iOS 15), on top of the
 [Project Sandcastle](https://github.com/corellium/projectsandcastle) Linux kernel.
@@ -9,16 +10,19 @@ Wi-Fi and internet (software-rendered, so usable but not fast). Your iPhone stay
 normal iPhone: iOS boots as usual; Android is loaded from your Mac each time.
 Persistent storage (so apps and settings survive reboots) is set up by default during
 first-time setup; the Pixel-style launcher is an optional extra step — see below.
+> **What has been ported so far:**
+> - [x] `install.sh` (replaced `shasum` with `sha256sum`, removed Mac paths)
+> - [x] `join-image.sh` (fixed the NAND gluing bug)
+> - [x] `boot.sh` (swapped missing PongoOS with `checkra1n -cp`)
+> - [x] NAND transfer over `iproxy` and SSH (tested on Debian Testing)
+> - [ ] `setup-device.sh` (currently being audited)
+> *AMD Ryzen Users:** You will likely hit a `-75` USB error. Use `palen1x` on a USB drive to inject the payload, then run the script.
 
 > ⚠️ **Status: usable but tethered, and not fully hands-off yet.** It boots to a
 > working UI. It has **no audio, camera, cellular, Bluetooth or GPU acceleration**,
-> and it must be booted from a Mac each time. See [`docs/STATE.md`](docs/STATE.md)
+> and it must be booted from a Linux each time. See [`docs/STATE.md`](docs/STATE.md)
 > for the exact works / doesn't-work list, and [`ROADMAP.md`](ROADMAP.md) for
 > what's left before it's a clean, one-command, legal public release.
->
-> nand gluing fixed;
-> 
-> For Ryzen: Use palen1x USB drive or create an EFI with palen1x inside.
 
 <p align="center"><img src="pixel/preview.png" width="280" alt="Pixel-style Android on iPhone 7"></p>
 
@@ -73,7 +77,7 @@ bootstrap/SSH). Everything below drives the phone over that SSH connection, so c
 git clone https://github.com/theesctechh/iDroidik-linux.git && cd iDroidik-linux
 cp config.env.example config.env      # set IOS_IP (your jailbroken iPhone's SSH IP)
 ./install.sh                          # auto-installs palera1n + sshpass + adb; fetches & verifies image + boot blobs
-./setup-device.sh                     # FIRST TIME ONLY: create the Android vhttps://github.com/theesctechh/iDroidik-linux/tree/mainolume + firmware
+./setup-device.sh                     # FIRST TIME ONLY: create the Android volume + firmware
 ./android.sh                          # exploit → boot Android (follow the DFU prompts)
 ./tools/fetch-apks.sh                 # download the FOSS apps (Lawnchair, Lawnicons, F-Droid…)
 ./pixelify.sh                         # make it look/act like Pixel + install those apps
