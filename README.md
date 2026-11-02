@@ -11,12 +11,12 @@ normal iPhone: iOS boots as usual; Android is loaded from your Linux machine eac
 Persistent storage (so apps and settings survive reboots) is set up by default during
 first-time setup; the Pixel-style launcher is an optional extra step — see below.
 > **What has been ported so far:**
-> - [x] `install.sh` (replaced `shasum` with `sha256sum`, removed Mac paths)
+> - [x] `install.sh` (replaced `shasum` with `sha256sum`, removed Mac paths) 
 > - [x] `join-image.sh` (fixed the NAND gluing bug)
 > - [x] `boot.sh` (swapped missing PongoOS with `checkra1n -cp`)
 > - [x] NAND transfer over `iproxy` and SSH (tested on Debian Testing)
 > - [ ] `setup-device.sh` (currently being audited)
-> 
+> - [ ] `install.sh installed binaries check` (will be audited too)
 > **AMD Ryzen Users:** You will likely hit a `-75` USB error. Use `palen1x` on a USB drive to inject the payload, then run the script.
 
 > ⚠️ **Status: usable but tethered, and not fully hands-off yet.** It boots to a
