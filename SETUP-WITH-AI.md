@@ -1,7 +1,7 @@
 # Set up iDroidik with an AI (easiest path)
 
 This project is built to be installed **by an AI coding agent** (e.g. Claude Code) that has
-shell access to your Mac. You clone the repo, open it in the agent, connect your iPhone, and
+shell access to your Linux machine. You clone the repo, open it in the agent, connect your iPhone, and
 paste the prompt below. The agent drives the setup and walks you through the few physical
 steps (plugging the cable, the DFU button sequence). You don't need to understand the internals.
 
