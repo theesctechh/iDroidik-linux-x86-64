@@ -26,7 +26,7 @@ Hand-built on real hardware, not a tutorial reskin — the hard-won kernel/boot 
 reboots the phone after ~45 s, the cgroup-bpf backport that stops `netd` crash-looping, 16 KB-page
 VNDK, capex→apex, the hand-written audio-HAL stub) are written up in
 [`docs/TECHNICAL-NOTES.md`](docs/TECHNICAL-NOTES.md). The name **iDroidik** is a nod to the original
-iDroid/openiBoot (2010–2012); this is an independent, unrelated project.
+iDroid/openiBoot (2010–2012); this is an NOT independent, related project to an [iDroidik](https://github.com/Aisamo-fi/iDroidik).
 
 ## Easiest: set it up with an AI 🤖
 
