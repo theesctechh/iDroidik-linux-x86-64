@@ -7,7 +7,7 @@ Run a real **Android 16** on an **iPhone 7** (iOS 15), on top of the
 [Project Sandcastle](https://github.com/corellium/projectsandcastle) Linux kernel.
 Not a theme, not an emulator — a real Android desktop with working touchscreen,
 Wi-Fi and internet (software-rendered, so usable but not fast). Your iPhone stays a
-normal iPhone: iOS boots as usual; Android is loaded from your Mac each time.
+normal iPhone: iOS boots as usual; Android is loaded from your Linux machine each time.
 Persistent storage (so apps and settings survive reboots) is set up by default during
 first-time setup; the Pixel-style launcher is an optional extra step — see below.
 > **What has been ported so far:**
@@ -17,7 +17,7 @@ first-time setup; the Pixel-style launcher is an optional extra step — see bel
 > - [x] NAND transfer over `iproxy` and SSH (tested on Debian Testing)
 > - [ ] `setup-device.sh` (currently being audited)
 > 
-> *AMD Ryzen Users:** You will likely hit a `-75` USB error. Use `palen1x` on a USB drive to inject the payload, then run the script.
+> **AMD Ryzen Users:** You will likely hit a `-75` USB error. Use `palen1x` on a USB drive to inject the payload, then run the script.
 
 > ⚠️ **Status: usable but tethered, and not fully hands-off yet.** It boots to a
 > working UI. It has **no audio, camera, cellular, Bluetooth or GPU acceleration**,
