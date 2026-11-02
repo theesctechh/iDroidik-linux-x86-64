@@ -158,11 +158,17 @@ Porting by human, less AI used (In some parts, AI wasn't used)
 
 ## Credits
 [Apple](https://github.com/apple) - for iOS
+
 [Corellium](https://github.com/corellium) - for Project Sandcastle
+
 [Google](https://github.com/google) - for Android (AOSP) and SwiftShader
+
 [checkra1n team](https://checkra.in) - for checkra1n
+
 [palera1n team](https://palera.in) - for palera1n
+
 [aisamo-fi](https://github.com/Aisamo-fi) - for iDroidik
+
 
 Built on Project Sandcastle (Corellium), PongoOS (checkra1n), palera1n, SwiftShader
 (Google), and TrebleDroid / AOSP. See [`NOTICE`](NOTICE).
