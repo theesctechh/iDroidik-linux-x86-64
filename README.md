@@ -16,6 +16,7 @@ first-time setup; the Pixel-style launcher is an optional extra step — see bel
 > - [x] `boot.sh` (swapped missing PongoOS with `checkra1n -cp`)
 > - [x] NAND transfer over `iproxy` and SSH (tested on Debian Testing)
 > - [ ] `setup-device.sh` (currently being audited)
+> 
 > *AMD Ryzen Users:** You will likely hit a `-75` USB error. Use `palen1x` on a USB drive to inject the payload, then run the script.
 
 > ⚠️ **Status: usable but tethered, and not fully hands-off yet.** It boots to a
