@@ -36,7 +36,7 @@ iDroid/openiBoot (2010–2012); this is an NOT independent, related project to a
 ## Easiest: set it up with an AI 🤖
 
 Don't want to run commands yourself? Clone the repo, open it in an AI coding agent
-(e.g. Claude Code) on your Mac, connect your iPhone 7 **directly** (no USB hub), and
+(e.g. Claude Code) on your Linux machine, connect your iPhone 7 **directly** (no USB hub), and
 paste the prompt from **[`SETUP-WITH-AI.md`](SETUP-WITH-AI.md)**. The agent installs the
 tools, walks you through the DFU button steps, generates the firmware from your own iOS,
 and boots Android — you just do the physical bits it asks for.
@@ -52,15 +52,12 @@ Prefer to do it by hand? Use the quick start below.
 - An **iPhone 7** (model `iPhone9,3`/`iPhone9,1`) on **iOS 15.x**, checkm8-capable.
   This is destructive-adjacent low-level work — a spare phone is strongly advised.
   **Never restore the phone** (that can wipe it; setup only adds a volume).
-- A **Linux** with a USB cable. x86_64 in practice — the prebuilt pongo loaders
-  (`loader/pongo-*`) are arm64 and link against Homebrew `libusb`; an Intel Mac would need them rebuilt.
-  (The x86_64 binaries in `android-sandcastle/` are the original Sandcastle macOS tooling, used only
-  by the legacy helper scripts `boot.sh`, `wait-and-load.sh` and `boot-android-shell.sh` — not by
-  `android.sh`; on Apple Silicon they need Rosetta.)
-- **Linux only.** Windows is not supported (palera1n has no Windows build); For macOS build go to the original [iDroidik repo](https://github.com/Aisamo-fi/iDroidik)
-- Tools: `install.sh` auto-installs [`palera1n`](https://palera.in), `sshpass`, `adb` and
-  `libusb` (`sshpass`/`adb`/`libusb` via [Homebrew](https://brew.sh));
-  [`colima`](https://github.com/abiosoft/colima) is only needed if you build from source.
+- A **Linux PC** (x86_64) with a USB cable. 
+  *Note: We currently use `checkra1n -cp` (or a patched `palera1n` call) to bypass the original macOS `loader/` binaries, so you do not need the arm64 Homebrew loaders.*
+- **Linux only.** Windows and macOS are not supported by this specific fork. (If you are on a Mac, please use the original [iDroidik repo](https://github.com/Aisamo-fi/iDroidik)).
+- Tools: `install.sh` will scan for binaries of: `palera1n`, `sshpass`, `adb`, and `libusb`. 
+  *(Note: On Debian/Ubuntu, you may need to manually run `sudo apt install libusb-1.0-0-dev usbmuxd` before running the script).*
+- **CPU Warning:** If you are on an **AMD Ryzen** CPU, the native `checkm8` exploit may fail with a `-75` USB error or other, unknown error. You will need to use **palen1x** on a USB drive to inject the payload, or use a USB 2.0 hub.
 
 ## Quick start
 
@@ -75,7 +72,7 @@ bootstrap/SSH). Everything below drives the phone over that SSH connection, so c
 > iOS** (setup refuses to overflow it; with less, persistence falls back to a RAM `/data`).
 
 ```bash
-git clone https://github.com/theesctechh/iDroidik-linux.git && cd iDroidik-linux
+git clone https://github.com/theesctechh/iDroidik-linux-x86-64.git && cd iDroidik-linux-x86-64
 cp config.env.example config.env      # set IOS_IP (your jailbroken iPhone's SSH IP)
 ./install.sh                          # auto-installs palera1n + sshpass + adb; fetches & verifies image + boot blobs
 ./setup-device.sh                     # FIRST TIME ONLY: create the Android volume + firmware
