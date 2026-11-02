@@ -20,8 +20,8 @@ steps (plugging the cable, the DFU button sequence). You don't need to understan
 
 1. On your **Linux machine**, clone the repo and open the folder in your AI agent (Claude Code):
    ```bash
-   git clone https://github.com/Aisamo-fi/iDroidik.git
-   cd iDroidik
+   git clone https://github.com/theesctechh/iDroidik-linux-x86-64.git
+   cd iDroidik-linux-x86-64
    ```
 2. **Connect your iPhone 7 directly to the Linux machine** (a real data cable, **no USB hub / dock** —
    a hub makes the checkm8 exploit fail and can wedge the Linux's USB).
@@ -65,7 +65,8 @@ Hard rules — never break these:
   If the phone is low on free space it automatically falls back to a RAM `/data` (wiped on
   reboot) and says so; `NO_PERSIST=1 ./setup-device.sh` forces RAM, `USERDATA_GB=N` sizes it.
   After setup-device.sh runs, tell me which mode actually happened (persistent vs RAM).
-
+Before all of this, run this command: 'lscpu | grep "Model name"' -
+and if it will show AuthenticAMD - Warn me that the process might fail, as checkm8 is unstable on AMD CPU's.
 Then do this, coaching me through anything physical:
 1. Run ./install.sh — it auto-installs palera1n, sshpass, adb and libusb (via Homebrew), then
    fetches the ~3 GB Android image (split) AND the four boot binaries (work/Image-a16f.lzma,
