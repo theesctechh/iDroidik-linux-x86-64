@@ -96,7 +96,7 @@ cp config.env.example config.env      # set IOS_IP (your jailbroken iPhone's SSH
 |---------|--------------|
 | `./android.sh` | boot Android and apply performance/thermal tuning (default) |
 | `./android.sh deploy` | write a rebuilt image to the phone, then boot it |
-| `./android.sh save` | copy Android `/data` back to the Mac |
+| `./android.sh save` | copy Android `/data` back to the Linux machine |
 | `./android.sh restore` | restore saved `/data` into a running Android |
 | `./android.sh tune` | re-apply tuning to a running Android |
 | `./android.sh linux` | boot the Sandcastle **Linux** build instead |
